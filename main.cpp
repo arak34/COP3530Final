@@ -155,3 +155,161 @@ int main() {
 
     return 0;
 }
+
+// AVL Node structure
+struct AVLNode {
+    std::string key;
+    Restaurant value;
+    int height;
+    AVLNode* left;
+    AVLNode* right;
+
+    AVLNode(const std::string& key, const Restaurant& value)
+            : key(key), value(value), height(1), left(nullptr), right(nullptr) {}
+};
+
+class OrderedMap {
+public:
+    OrderedMap() : root(nullptr) {}
+
+    ~OrderedMap() {
+        clear(root);
+    }
+
+    void insert(const std::string& key, const Restaurant& value) {
+        root = insert(root, key, value);
+    }
+
+    void printInOrder() const {
+        printInOrder(root);
+    }
+
+private:
+    AVLNode* root;
+
+    int height(AVLNode* node) const {
+        return node ? node->height : 0;
+    }
+
+    int balanceFactor(AVLNode* node) const {
+        return height(node->left) - height(node->right);
+    }
+
+    void updateHeight(AVLNode* node) {
+        node->height = 1 + std::max(height(node->left), height(node->right));
+    }
+
+    AVLNode* rotateRight(AVLNode* y) {
+        AVLNode* x = y->left;
+        y->left = x->right;
+        x->right = y;
+
+        updateHeight(y);
+        updateHeight(x);
+
+        return x;
+    }
+
+    AVLNode* rotateLeft(AVLNode* x) {
+        AVLNode* y = x->right;
+        x->right = y->left;
+        y->left = x;
+
+        updateHeight(x);
+        updateHeight(y);
+
+        return y;
+    }
+
+    AVLNode* insert(AVLNode* node, const std::string& key, const Restaurant& value) {
+        if (!node) {
+            return new AVLNode(key, value);
+        }
+
+        if (key < node->key) {
+            node->left = insert(node->left, key, value);
+        } else if (key > node->key) {
+            node->right = insert(node->right, key, value);
+        } else {
+            // Key already exists, update the value
+            node->value = value;
+        }
+
+        updateHeight(node);
+
+        int balance = balanceFactor(node);
+
+        if (balance > 1) {
+            if (balanceFactor(node->left) < 0) {
+                node->left = rotateLeft(node->left);
+            }
+            return rotateRight(node);
+        }
+
+        if (balance < -1) {
+            if (balanceFactor(node->right) > 0) {
+                node->right = rotateRight(node->right);
+            }
+            return rotateLeft(node);
+        }
+
+        return node;
+    }
+
+    void printInOrder(AVLNode* node) const {
+        if (!node) {
+            return;
+        }
+
+        printInOrder(node->left);
+
+        const Restaurant& r = node->value;
+        std::cout << "Business ID: " << r.business_id << std::endl;
+        std::cout << "Name: " << r.name << std::endl;
+        std::cout << "Address: " << r.address << std::endl;
+        // Add any other fields you want to print
+        std::cout << "-----------------------------" << std::endl;
+
+        printInOrder(node->right);
+    }
+
+
+    void clear(AVLNode* node) {
+        if (!node) {
+            return;
+        }
+
+        clear(node->left);
+        clear(node->right);
+
+        delete node;
+    }
+};
+
+// Modify the read_csv function to use the OrderedMap
+void read_csv(const std::string& file_name, OrderedMap& ordered_map) {
+    std::ifstream file(file_name);
+    std::string line;
+
+    // Skip header line
+    std::getline(file, line);
+
+    while (std::getline(file, line)) {
+        std::vector<std::string> tokens = split(line, ',');
+
+        // ... (populate the Restaurant struct)
+
+        ordered_map.insert(r.business_id, r);
+    }
+}
+
+// Modify the main function to use the OrderedMap
+int main() {
+    OrderedMap ordered_map;
+    read_csv("restaurants.csv", ordered_map);
+
+    // Print the contents of the ordered_map to verify the data
+    ordered_map.printInOrder();
+
+    // ... (rest of the code)
+}
